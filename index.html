@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>อากาศบ้านเรา</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(160deg,#102b46,#286b91);color:white;min-height:100vh;padding:20px}
+main{max-width:600px;margin:auto}
+h1{font-size:30px;margin-bottom:6px}
+p{color:#d4e9f6}
+.card{background:#ffffff18;border:1px solid #ffffff35;border-radius:20px;padding:22px;margin-top:18px}
+label{display:block;margin-bottom:8px}
+input,button{font:inherit;padding:13px;border-radius:12px;border:0}
+input{width:100%;margin-bottom:10px;background:#f5fbff;color:#102b46}
+button{background:#a6e4ff;color:#102b46;font-weight:bold;width:100%;cursor:pointer}
+.weather{font-size:56px;font-weight:bold;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+.item{background:#102b464d;padding:15px;border-radius:14px}
+.small{font-size:14px;color:#d4e9f6}
+#status{font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<main>
+<p>🌦️ LOCAL WEATHER</p>
+<h1>อากาศบ้านเรา</h1>
+<p>ตรวจสอบสภาพอากาศในพื้นที่ที่คุณสนใจ</p>
+<div class="card">
+<label for="place">ค้นหาพื้นที่ในประเทศไทย</label>
+<input id="place" value="สร้างคอม อุดรธานี" placeholder="เช่น สร้างคอม อุดรธานี">
+<button onclick="searchWeather()">ดูสภาพอากาศ</button>
+<p id="status">พร้อมค้นหาสภาพอากาศ</p>
+</div>
+<div class="card">
+<div id="location">พื้นที่ของคุณ</div>
+<div id="icon" style="font-size:42px">🌤️</div>
+<div class="weather" id="temp">--°C</div>
+<div id="desc">ค้นหาพื้นที่เพื่อดูข้อมูล</div>
+<div class="grid">
+<div class="item"><div class="small">💧 ความชื้น</div><strong id="humidity">--%</strong></div>
+<div class="item"><div class="small">🌬️ ความเร็วลม</div><strong id="wind">-- km/h</strong></div>
+<div class="item"><div class="small">🌧️ โอกาสฝน</div><strong id="rain">--%</strong></div>
+<div class="item"><div class="small">🕒 เวลาข้อมูล</div><strong id="time">--:--</strong></div>
+</div>
+</div>
+<div class="card"><h3>พยากรณ์รายชั่วโมง</h3><div id="hours" class="small">ข้อมูลจะปรากฏหลังค้นหาพื้นที่</div></div>
+<p class="small">ข้อมูลพยากรณ์จาก Open-Meteo ไม่ใช่การวัดสภาพอากาศ ณ บ้านโดยตรง</p>
+</main>
+<script>
+function weatherInfo(code){
+ if(code===0)return ['ท้องฟ้าแจ่มใส','☀️'];
+ if(code<=2)return ['มีเมฆบางส่วน','🌤️'];
+ if(code===3)return ['มีเมฆมาก','☁️'];
+ if(code===45||code===48)return ['มีหมอก','🌫️'];
+ if(code<=67||code>=80&&code<=82)return ['มีฝน','🌧️'];
+ if(code>=95)return ['พายุฝนฟ้าคะนอง','⛈️'];
+ return ['สภาพอากาศแปรปรวน','🌥️'];
+}
+async function searchWeather(){
+ const q=document.getElementById('place').value.trim();
+ const status=document.getElementById('status');
+ if(!q){status.textContent='กรุณาพิมพ์ชื่อพื้นที่';return}
+ status.textContent='กำลังค้นหาข้อมูล...';
+ try{
+  const g=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=10&language=th&format=json');
+  const gj=await g.json();
+  const places=(gj.results||[]).filter(p=>p.country_code==='TH');
+  if(!places.length)throw Error('ไม่พบพื้นที่ ลองพิมพ์ชื่ออำเภอหรือจังหวัด');
+  let p=places[0];
+  if(places.length>1){
+   const choice=prompt('เลือกพื้นที่โดยพิมพ์เลข:\n'+places.slice(0,6).map((x,i)=>(i+1)+'. '+x.name+(x.admin1?', '+x.admin1:'')).join('\n'),'1');
+   p=places[Math.max(0,Math.min(places.length-1,(parseInt(choice||'1')||1)-1))];
+  }
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+p.latitude+'&longitude='+p.longitude+'&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=1&timezone=auto';
+  const r=await fetch(u);const d=await r.json();const c=d.current;
+  const info=weatherInfo(c.weather_code);
+  document.getElementById('location').textContent=[p.name,p.admin1].filter(Boolean).join(', ');
+  document.getElementById('icon').textContent=info[1];
+  document.getElementById('temp').textContent=Math.round(c.temperature_2m)+'°C';
+  document.getElementById('desc').textContent=info[0];
+  document.getElementById('humidity').textContent=c.relative_humidity_2m+'%';
+  document.getElementById('wind').textContent=c.wind_speed_10m+' km/h';
+  document.getElementById('time').textContent=c.time.slice(11,16);
+  const i=d.hourly.time.findIndex(t=>t>=c.time);
+  document.getElementById('rain').textContent=(d.hourly.precipitation_probability[Math.max(i,0)]??0)+'%';
+  document.getElementById('hours').innerHTML='';
+  for(let j=Math.max(i,0);j<Math.min(Math.max(i,0)+6,d.hourly.time.length);j++){
+   const inf=weatherInfo(d.hourly.weather_code[j]);
+   const line=document.createElement('div');
+   line.textContent=d.hourly.time[j].slice(11,16)+'  '+inf[1]+'  '+Math.round(d.hourly.temperature_2m[j])+'°C  • ฝน '+(d.hourly.precipitation_probability[j]??0)+'%';
+   line.style.padding='8px 0';document.getElementById('hours').appendChild(line);
+  }
+  status.textContent='โหลดข้อมูลสำเร็จ • พิกัด '+p.latitude.toFixed(3)+', '+p.longitude.toFixed(3);
+ }catch(e){status.textContent='โหลดข้อมูลไม่สำเร็จ: '+e.message+' กรุณาลองอีกครั้งและตรวจสอบอินเทอร์เน็ต'}
+}
+</script>
+</body>
+</html>
