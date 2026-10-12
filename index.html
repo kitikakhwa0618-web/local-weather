@@ -1,268 +1,456 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LOCAL WEATHER | อากาศบ้านเรา</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10120F">
+<title>LOCAL WEATHER | Smart Weather</title>
 
 <link rel="stylesheet"
  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-*{box-sizing:border-box}
-body{
- margin:0;font-family:Arial,sans-serif;color:#f4f8ff;
- background:linear-gradient(145deg,#102b46,#286b91);
- min-height:100vh;padding:20px
+:root {
+  --bg:#10120F;
+  --card:#1D211A;
+  --green:#789653;
+  --light:#C4D6A2;
+  --text:#F0F1E9;
+  --muted:#A3AA99;
+  --border:#39452E;
 }
-main{max-width:900px;margin:auto}
-h1{font-size:30px;margin:8px 0}
-p{color:#d4e9f6;line-height:1.6}
-.card{
- background:#ffffff14;border:1px solid #ffffff30;
- border-radius:20px;padding:20px;margin:16px 0
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif;
 }
-input,button{
- font:inherit;padding:13px;border:0;border-radius:12px
+header {
+  padding:22px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
-input{width:100%;margin:8px 0;background:#f5fbff;color:#102b46}
-button{cursor:pointer;background:#a6e4ff;color:#102b46;font-weight:bold}
-button:disabled{opacity:.5}
-.searchrow{display:flex;gap:8px;flex-wrap:wrap}
-.searchrow input{flex:1;min-width:180px}
-.searchrow button{margin:8px 0}
-#status{font-size:14px}
-.big{font-size:54px;font-weight:bold;margin:8px 0}
-.stats,.hours{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.stat,.hour{
- background:#102b4655;border-radius:14px;padding:14px
+.logo {
+  width:48px;height:48px;
+  display:grid;place-items:center;
+  border-radius:15px;
+  background:var(--green);
+  color:var(--bg);
+  font-size:25px;
 }
-.stat strong{display:block;font-size:21px;margin-top:7px}
-#map{height:360px;border-radius:14px;overflow:hidden;background:#dce8ee}
-.hour{font-size:14px;line-height:1.7}
-.hour strong{font-size:20px;display:block}
-.bar{height:7px;background:#ffffff35;border-radius:9px;margin-top:7px;overflow:hidden}
-.bar span{height:100%;display:block;background:#83e1ff}
-small{color:#d4e9f6;line-height:1.8}
-a{color:#a6e4ff}
-@media(max-width:480px){
- body{padding:12px}.card{padding:15px}
- .big{font-size:46px}#map{height:300px}
+.brand { font-size:19px;font-weight:850;letter-spacing:.5px; }
+.subtitle { color:var(--muted);font-size:11px;letter-spacing:1px; }
+main { max-width:850px;margin:auto;padding:16px; }
+h2 { font-size:18px;margin:0 0 12px; }
+h3 { font-size:15px;margin:0 0 8px; }
+p { line-height:1.6; }
+.muted { color:var(--muted);font-size:13px; }
+.search {
+  display:flex;gap:8px;margin-bottom:12px;
+}
+input,button {
+  font:inherit;border-radius:12px;padding:12px;
+}
+input {
+  min-width:0;flex:1;
+  background:var(--card);color:var(--text);
+  border:1px solid var(--border);
+}
+button {
+  border:0;background:var(--green);
+  color:#10120F;font-weight:750;cursor:pointer;
+}
+button:disabled { opacity:.5; }
+.card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;padding:16px;margin-bottom:14px;
+}
+.location { color:var(--light);font-size:13px; }
+.current {
+  display:flex;justify-content:space-between;
+  align-items:center;gap:12px;
+}
+.temp { font-size:48px;font-weight:800;line-height:1.2; }
+.weather-icon { font-size:44px; }
+.metrics {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;margin-top:16px;
+}
+.metric {
+  background:#141710;border-radius:13px;padding:12px;
+}
+.metric-label { color:var(--muted);font-size:12px; }
+.metric-value { font-size:21px;font-weight:750;margin-top:5px; }
+.advisor {
+  border-color:#566C3C;
+  background:linear-gradient(145deg,#26321E,#1D211A 72%);
+}
+.advisor-title {
+  color:var(--light);font-size:12px;font-weight:700;
+}
+.advice-main { font-size:23px;font-weight:800;margin:8px 0; }
+.advice-text { font-size:14px;line-height:1.7;color:#D5DACB; }
+.advice-tag {
+  display:inline-block;border-radius:8px;
+  background:#35472A;color:var(--light);
+  padding:5px 9px;font-size:12px;margin-top:8px;
+}
+.hourly {
+  display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;
+}
+.hour {
+  flex:0 0 78px;text-align:center;
+  background:#141710;border-radius:12px;padding:12px 6px;
+}
+.hour-time { font-size:12px;color:var(--muted); }
+.hour-icon { font-size:22px;margin:9px 0; }
+.hour-rain { color:var(--light);font-weight:750;font-size:13px; }
+.hour-temp { margin-top:5px;font-size:14px; }
+#map {
+  height:330px;border-radius:13px;overflow:hidden;
+  background:#252A22;
+}
+.map-controls { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px; }
+.map-controls button { font-size:12px;padding:9px 12px; }
+.secondary { background:#30382A;color:var(--light); }
+.status { font-size:12px;color:var(--muted);margin-top:10px; }
+footer {
+  text-align:center;color:var(--muted);
+  font-size:11px;padding:16px 10px 30px;
+}
+hr { border:0;border-top:1px solid var(--border);margin:14px 0; }
+@media(min-width:650px) {
+  .metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 </style>
 </head>
 
 <body>
+<header>
+  <div class="logo">☁</div>
+  <div>
+    <div class="brand">LOCAL WEATHER</div>
+    <div class="subtitle">WEATHER · RADAR · SMART ADVISOR</div>
+  </div>
+</header>
+
 <main>
- <header>
-  <p>🌦️ LOCAL WEATHER</p>
-  <h1>อากาศบ้านเรา</h1>
-  <p>ตรวจสอบสภาพอากาศ โอกาสฝนตก และแผนที่เรดาร์ฝน</p>
- </header>
+  <form class="search" id="searchForm">
+    <input id="placeInput" value="สร้างคอม, อุดรธานี"
+      placeholder="ค้นหาตำบลหรือจังหวัด..." aria-label="ค้นหาพื้นที่">
+    <button id="searchBtn" type="submit">ค้นหา</button>
+  </form>
 
- <section class="card">
-  <h2>📍 ค้นหาพื้นที่</h2>
-  <div class="searchrow">
-   <input id="place" value="สร้างคอม, อุดรธานี"
-    placeholder="เช่น สร้างคอม, อุดรธานี">
-   <button id="searchBtn" onclick="searchPlace()">ค้นหา</button>
-  </div>
-  <p id="status" role="status">กำลังเตรียมข้อมูล...</p>
- </section>
+  <section class="card">
+    <div class="location" id="locationName">กำลังโหลดพื้นที่...</div>
+    <div class="current">
+      <div>
+        <div class="temp" id="temperature">--°</div>
+        <div id="condition">กำลังโหลดข้อมูลอากาศ...</div>
+        <div class="muted" id="feelsLike"></div>
+      </div>
+      <div class="weather-icon" id="weatherIcon">🌤️</div>
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">โอกาสฝนในชั่วโมงนี้</div>
+        <div class="metric-value" id="rainNow">--%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">ความชื้น</div>
+        <div class="metric-value" id="humidity">--%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">ความเร็วลม</div>
+        <div class="metric-value" id="wind">-- km/h</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">ปริมาณฝนรายชั่วโมง</div>
+        <div class="metric-value" id="rainAmount">-- mm</div>
+      </div>
+    </div>
+  </section>
 
- <section class="card">
-  <h2>🌤️ สภาพอากาศปัจจุบัน</h2>
-  <div id="locationName">ประเทศไทย</div>
-  <div class="big" id="temp">--°C</div>
-  <p id="description">รอข้อมูลสภาพอากาศ</p>
-  <div class="stats">
-   <div class="stat">💧 ความชื้น<strong id="humidity">--%</strong></div>
-   <div class="stat">🌬️ ความเร็วลม<strong id="wind">-- km/h</strong></div>
-   <div class="stat">🌧️ โอกาสฝนตกในชั่วโมงนี้<strong id="rainChance">--%</strong></div>
-   <div class="stat">🌂 ปริมาณฝน<strong id="rainAmount">-- mm</strong></div>
-  </div>
- </section>
+  <section class="card advisor">
+    <div class="advisor-title">✦ SMART WEATHER ADVISOR</div>
+    <h2 style="margin-top:8px">ผู้ช่วยตัดสินใจ</h2>
+    <div class="advice-main" id="adviceTitle">กำลังวิเคราะห์...</div>
+    <div class="advice-text" id="adviceText">
+      กำลังตรวจสอบพยากรณ์อากาศรายชั่วโมง
+    </div>
+    <div class="advice-tag" id="adviceTag">อิงจากข้อมูลพยากรณ์</div>
+    <hr>
+    <h3>ช่วงเวลาที่มีโอกาสฝนน้อยกว่า</h3>
+    <div class="advice-text" id="bestTime">รอข้อมูลพยากรณ์...</div>
+    <p class="muted">คำแนะนำนี้เป็นการประเมินจากพยากรณ์ ไม่รับประกันสภาพอากาศจริง</p>
+  </section>
 
- <section class="card">
-  <h2>🗺️ เรดาร์ฝน</h2>
-  <p>แผนที่แสดงกลุ่มฝนจากข้อมูลเรดาร์ย้อนหลัง เลื่อนหรือซูมเพื่อดูพื้นที่ใกล้เคียง</p>
-  <div id="map"></div>
-  <p id="radarStatus">กำลังโหลดแผนที่เรดาร์...</p>
-  <button onclick="refreshRadar()">🔄 อัปเดตเรดาร์</button>
-  <p><small>แหล่งเรดาร์: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a> · แผนที่: OpenStreetMap</small></p>
- </section>
+  <section class="card">
+    <h2>แนวโน้มอากาศรายชั่วโมง</h2>
+    <p class="muted">เลื่อนด้านข้างเพื่อดูเวลา อุณหภูมิ และโอกาสฝน</p>
+    <div class="hourly" id="hourly">
+      <div class="muted">กำลังโหลด...</div>
+    </div>
+  </section>
 
- <section class="card">
-  <h2>⏰ พยากรณ์รายชั่วโมง</h2>
-  <p>โอกาสฝนตกและอุณหภูมิในชั่วโมงข้างหน้า</p>
-  <div id="hours" class="hours">กำลังโหลดข้อมูล...</div>
- </section>
+  <section class="card">
+    <h2>เรดาร์ฝน</h2>
+    <p class="muted">ดูตำแหน่งฝนจากภาพเรดาร์ย้อนหลัง เมื่อมีข้อมูลให้บริการ</p>
+    <div class="map-controls">
+      <button type="button" id="radarBtn">เปิดเรดาร์ฝน</button>
+      <button type="button" class="secondary" id="plainBtn">แผนที่ปกติ</button>
+    </div>
+    <div id="map"></div>
+    <div class="status" id="radarStatus">กำลังเตรียมแผนที่...</div>
+  </section>
 
- <footer>
-  <small>ข้อมูลพยากรณ์จาก <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
-  ข้อมูลเป็นการพยากรณ์จากแบบจำลอง ไม่ใช่การวัด ณ จุดนั้นโดยตรง</small>
- </footer>
+  <div class="status" id="updatedAt">กำลังโหลดข้อมูล...</div>
 </main>
+
+<footer>
+  Weather data: Open-Meteo · Map: OpenStreetMap · Radar: RainViewer<br>
+  LOCAL WEATHER — ข้อมูลเพื่อประกอบการตัดสินใจ
+</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
-let latitude = 17.826;
-let longitude = 103.093;
-let map, marker, radarLayer;
+let map;
+let radarLayer = null;
+let currentLat = 17.276;
+let currentLon = 103.093;
+let radarFrames = [];
 
-function weatherText(code){
- if(code===0)return "ท้องฟ้าแจ่มใส";
- if(code===1)return "ท้องฟ้าโปร่งเป็นส่วนใหญ่";
- if(code===2)return "มีเมฆบางส่วน";
- if(code===3)return "มีเมฆมาก";
- if([45,48].includes(code))return "มีหมอก";
- if([51,53,55].includes(code))return "ฝนปรอย";
- if([56,57,66,67].includes(code))return "ฝนเยือกแข็ง";
- if([61,63,65,80,81,82].includes(code))return "มีฝนตก";
- if([71,73,75,77,85,86].includes(code))return "หิมะตก";
- if([95,96,99].includes(code))return "พายุฝนฟ้าคะนอง";
- return "สภาพอากาศแปรปรวน";
+function weatherDescription(code) {
+  if (code === 0) return ["ท้องฟ้าแจ่มใส","☀️"];
+  if (code === 1) return ["ท้องฟ้าโปร่งเป็นส่วนใหญ่","🌤️"];
+  if (code === 2) return ["มีเมฆบางส่วน","⛅"];
+  if (code === 3) return ["มีเมฆมาก","☁️"];
+  if ([45,48].includes(code)) return ["มีหมอก","🌫️"];
+  if ([51,53,55,56,57].includes(code)) return ["มีฝนละออง","🌦️"];
+  if ([61,63,65,66,67,80,81,82].includes(code)) return ["มีฝน","🌧️"];
+  if ([71,73,75,77,85,86].includes(code)) return ["มีหิมะ","🌨️"];
+  if ([95,96,99].includes(code)) return ["มีพายุฝนฟ้าคะนอง","⛈️"];
+  return ["สภาพอากาศแปรปรวน","🌥️"];
 }
 
-function initMap(){
- map=L.map("map").setView([latitude,longitude],6);
- L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-  maxZoom:19,
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
- }).addTo(map);
- marker=L.marker([latitude,longitude]).addTo(map);
- marker.bindPopup("พื้นที่ที่เลือก");
+function setText(id, value) {
+  $(id).textContent = value;
 }
 
-function moveMap(){
- if(!map)return;
- map.setView([latitude,longitude],7);
- marker.setLatLng([latitude,longitude]);
- marker.bindPopup($("locationName").textContent);
-}
+async function searchPlace(query) {
+  const url = "https://geocoding-api.open-meteo.com/v1/search?name="
+    + encodeURIComponent(query) + "&count=10&language=th&format=json";
 
-async function searchPlace(){
- const query=$("place").value.trim();
- if(!query){$("status").textContent="กรุณาพิมพ์ชื่อพื้นที่";return}
- $("searchBtn").disabled=true;
- $("status").textContent="กำลังค้นหาพื้นที่...";
- try{
-  const url="https://geocoding-api.open-meteo.com/v1/search?name="
-   +encodeURIComponent(query)+"&count=10&language=th&format=json";
-  const res=await fetch(url);
-  if(!res.ok)throw new Error("ค้นหาพื้นที่ไม่สำเร็จ");
-  const data=await res.json();
-  if(!data.results||!data.results.length){
-   throw new Error("ไม่พบพื้นที่ ลองพิมพ์ชื่ออำเภอหรือจังหวัด");
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("ค้นหาพื้นที่ไม่สำเร็จ");
+
+  const data = await response.json();
+  if (!data.results || !data.results.length) {
+    throw new Error("ไม่พบพื้นที่นี้ ลองค้นหาด้วยชื่อภาษาไทย");
   }
 
-  const list=data.results;
-  let chosen=list.find(x=>
-   (x.country_code||"").toUpperCase()==="TH" &&
-   (x.admin1||"").includes("อุดรธานี")
-  );
-  if(!chosen)chosen=list.find(x=>(x.country_code||"").toUpperCase()==="TH");
-  if(!chosen)chosen=list[0];
+  const place = data.results.find(
+    item => (item.country_code || "").toUpperCase() === "TH"
+  ) || data.results[0];
 
-  latitude=chosen.latitude;
-  longitude=chosen.longitude;
-  const parts=[chosen.name,chosen.admin1,chosen.country].filter(Boolean);
-  $("locationName").textContent=parts.join(", ");
-  moveMap();
+  currentLat = place.latitude;
+  currentLon = place.longitude;
+
+  const parts = [place.name, place.admin1, place.country].filter(Boolean);
+  setText("locationName", parts.join(" · "));
+
+  if (map) map.setView([currentLat,currentLon],9);
+
   await loadWeather();
-  await refreshRadar();
-  $("status").textContent="ค้นหาพื้นที่สำเร็จ";
- }catch(err){
-  $("status").textContent=err.message+" กรุณาลองใหม่";
- }finally{
-  $("searchBtn").disabled=false;
- }
 }
 
-async function loadWeather(){
- const url="https://api.open-meteo.com/v1/forecast?"
-  +"latitude="+latitude+"&longitude="+longitude
-  +"&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m"
-  +"&hourly=temperature_2m,precipitation_probability,precipitation,weather_code"
-  +"&forecast_days=2&timezone=auto";
+async function loadWeather() {
+  setText("condition","กำลังโหลดข้อมูลอากาศ...");
+  const url = "https://api.open-meteo.com/v1/forecast?"
+    + "latitude=" + currentLat
+    + "&longitude=" + currentLon
+    + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,"
+    + "precipitation,rain,weather_code,wind_speed_10m"
+    + "&hourly=temperature_2m,precipitation_probability,precipitation,"
+    + "weather_code"
+    + "&forecast_days=2&timezone=auto";
 
- const res=await fetch(url);
- if(!res.ok)throw new Error("โหลดข้อมูลอากาศไม่สำเร็จ");
- const data=await res.json();
- const c=data.current;
- const h=data.hourly;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("โหลดพยากรณ์อากาศไม่สำเร็จ");
 
- $("temp").textContent=Math.round(c.temperature_2m)+"°C";
- $("humidity").textContent=c.relative_humidity_2m+"%";
- $("wind").textContent=c.wind_speed_10m+" km/h";
- $("description").textContent=weatherText(c.weather_code);
- $("rainAmount").textContent=Number(c.precipitation).toFixed(1)+" mm";
+  const data = await response.json();
+  const c = data.current;
+  const h = data.hourly;
 
- const now=Date.now();
- let idx=0, closest=Infinity;
- h.time.forEach((t,i)=>{
-  const diff=Math.abs(new Date(t).getTime()-now);
-  if(diff<closest){closest=diff;idx=i}
- });
- $("rainChance").textContent=(h.precipitation_probability[idx]??0)+"%";
+  const [description, icon] = weatherDescription(c.weather_code);
+  setText("temperature",Math.round(c.temperature_2m)+"°C");
+  setText("condition",description);
+  setText("weatherIcon",icon);
+  setText("feelsLike","รู้สึกเหมือน "+Math.round(c.apparent_temperature)+"°C");
+  setText("humidity",c.relative_humidity_2m+"%");
+  setText("wind",Math.round(c.wind_speed_10m)+" km/h");
+  setText("rainAmount",Number(c.precipitation).toFixed(1)+" mm");
 
- let html="";
- for(let i=idx;i<Math.min(idx+8,h.time.length);i++){
-  const time=new Date(h.time[i]).toLocaleTimeString("th-TH",{
-   hour:"2-digit",minute:"2-digit",hour12:false,timeZone:data.timezone
-  });
-  const chance=h.precipitation_probability[i]??0;
-  html+=`<div class="hour">
-   <b>${time}</b>
-   <strong>${Math.round(h.temperature_2m[i])}°C</strong>
-   ${weatherText(h.weather_code[i])}<br>
-   🌧️ โอกาสฝน ${chance}%<br>
-   ปริมาณฝน ${Number(h.precipitation[i]??0).toFixed(1)} mm
-   <div class="bar"><span style="width:${Math.max(0,Math.min(100,chance))}%"></span></div>
-  </div>`;
- }
- $("hours").innerHTML=html;
+  const now = new Date(c.time).getTime();
+  let start = h.time.findIndex(t => new Date(t).getTime() >= now);
+  if (start < 0) start = 0;
+
+  const probability = h.precipitation_probability[start];
+  setText("rainNow", probability == null ? "ไม่มีข้อมูล" : probability+"%");
+
+  renderHourly(h,start);
+  renderAdvice(h,start);
+
+  setText("updatedAt","ข้อมูลพยากรณ์ล่าสุดที่ดึงได้: "+new Date().toLocaleString("th-TH"));
 }
 
-async function refreshRadar(){
- $("radarStatus").textContent="กำลังโหลดเรดาร์ฝน...";
- try{
-  const res=await fetch("https://api.rainviewer.com/public/weather-maps.json");
-  if(!res.ok)throw new Error("เรดาร์ไม่ตอบสนอง");
-  const data=await res.json();
-  const frames=data.radar&&data.radar.past;
-  if(!frames||!frames.length)throw new Error("ไม่มีภาพเรดาร์ย้อนหลังให้แสดง");
+function renderHourly(h,start) {
+  const container = $("hourly");
+  container.innerHTML = "";
 
-  const frame=frames[frames.length-1];
-  const host=data.host||"https://tilecache.rainviewer.com";
-  const tileUrl=host+frame.path+"/256/{z}/{x}/{y}/2/1_1.png";
+  for (let i=start; i<Math.min(start+24,h.time.length); i++) {
+    const [desc,icon] = weatherDescription(h.weather_code[i]);
+    const time = h.time[i].slice(11,16);
+    const rain = h.precipitation_probability[i];
 
-  if(radarLayer)map.removeLayer(radarLayer);
-  radarLayer=L.tileLayer(tileUrl,{
-   opacity:0.7,
-   maxZoom:7,
-   maxNativeZoom:7,
-   attribution:'Radar &copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
+    const item = document.createElement("div");
+    item.className = "hour";
+    item.innerHTML =
+      '<div class="hour-time">'+time+'</div>'+
+      '<div class="hour-icon" title="'+desc+'">'+icon+'</div>'+
+      '<div class="hour-rain">'+(rain == null ? "--" : rain+"%")+'</div>'+
+      '<div class="hour-temp">'+Math.round(h.temperature_2m[i])+'°</div>';
+    container.appendChild(item);
+  }
+}
+
+function renderAdvice(h,start) {
+  const rain = h.precipitation_probability[start];
+  const rainAmount = h.precipitation[start] || 0;
+
+  if (rain == null) {
+    setText("adviceTitle","ยังสรุปไม่ได้");
+    setText("adviceText","ไม่มีข้อมูลโอกาสฝนของชั่วโมงนี้ ลองโหลดใหม่อีกครั้ง");
+    setText("adviceTag","ข้อมูลไม่เพียงพอ");
+  } else if (rain >= 70 || rainAmount >= 2) {
+    setText("adviceTitle","ควรเตรียมร่มไว้ 🌧️");
+    setText("adviceText","พยากรณ์ชั่วโมงนี้มีโอกาสฝนค่อนข้างสูง หรือคาดการณ์ปริมาณฝนไว้ ควรเตรียมอุปกรณ์กันฝน");
+    setText("adviceTag","โอกาสฝนสูง");
+  } else if (rain >= 40) {
+    setText("adviceTitle","ควรเผื่อแผนสำหรับฝน 🌦️");
+    setText("adviceText","มีโอกาสเกิดฝนพอสมควร หากต้องออกไปข้างนอกควรพกร่มและติดตามเรดาร์");
+    setText("adviceTag","มีโอกาสฝน");
+  } else {
+    setText("adviceTitle","ตอนนี้โอกาสฝนค่อนข้างต่ำ ☀️");
+    setText("adviceText","พยากรณ์ชั่วโมงนี้มีโอกาสฝนไม่สูง แต่สภาพอากาศอาจเปลี่ยนแปลงได้");
+    setText("adviceTag","ยังควรติดตามอากาศ");
+  }
+
+  const future = [];
+  for (let i=start; i<Math.min(start+6,h.time.length); i++) {
+    if (h.precipitation_probability[i] != null) {
+      future.push({
+        time:h.time[i].slice(11,16),
+        chance:h.precipitation_probability[i]
+      });
+    }
+  }
+
+  future.sort((a,b) => a.chance-b.chance);
+  if (future.length) {
+    const best = future[0];
+    setText("bestTime","ใน 6 ชั่วโมงข้างหน้า ช่วง "+best.time+
+      " มีโอกาสฝนต่ำสุดในข้อมูลที่ตรวจได้ ("+best.chance+"%)");
+  } else {
+    setText("bestTime","ไม่มีข้อมูลพยากรณ์เพียงพอ");
+  }
+}
+
+function initMap() {
+  map = L.map("map").setView([currentLat,currentLon],8);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  const stamp=new Date(frame.time*1000).toLocaleString("th-TH");
-  $("radarStatus").textContent="ภาพเรดาร์ล่าสุดที่มี: "+stamp+
-   " · ภาพย้อนหลัง ไม่ใช่การพยากรณ์ฝนในอนาคต";
- }catch(err){
-  $("radarStatus").textContent="โหลดเรดาร์ไม่สำเร็จ: "+err.message+
-   " ลองใหม่ภายหลังได้";
- }
+  L.marker([currentLat,currentLon])
+    .addTo(map)
+    .bindPopup("พื้นที่ที่กำลังดู");
+
+  loadRadar();
 }
 
-$("place").addEventListener("keydown",e=>{
- if(e.key==="Enter")searchPlace();
+async function loadRadar() {
+  try {
+    setText("radarStatus","กำลังโหลดข้อมูลเรดาร์...");
+    const response = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    if (!response.ok) throw new Error("โหลดเรดาร์ไม่สำเร็จ");
+
+    const data = await response.json();
+    const frames = data.radar && data.radar.past;
+    if (!frames || !frames.length) throw new Error("ไม่มีภาพเรดาร์ให้บริการ");
+
+    radarFrames = frames;
+    showRadar();
+    setText("radarStatus","เรดาร์แสดงภาพย้อนหลัง ไม่ใช่การคาดการณ์ฝนในอนาคต");
+  } catch (error) {
+    setText("radarStatus","โหลดเรดาร์ไม่ได้ในขณะนี้ ลองใหม่ภายหลัง");
+  }
+}
+
+function showRadar() {
+  if (!map || !radarFrames.length) return;
+  if (radarLayer) map.removeLayer(radarLayer);
+
+  const frame = radarFrames[radarFrames.length-1];
+  const host = "https://tilecache.rainviewer.com";
+
+  radarLayer = L.tileLayer(
+    host + frame.path + "/256/{z}/{x}/{y}/2/1_1.png",
+    {opacity:0.65, maxZoom:7, attribution:'RainViewer'}
+  );
+
+  radarLayer.addTo(map);
+}
+
+$("searchForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const query = $("placeInput").value.trim();
+  if (!query) return;
+
+  $("searchBtn").disabled = true;
+  setText("updatedAt","กำลังค้นหาพื้นที่และโหลดข้อมูล...");
+
+  try {
+    await searchPlace(query);
+  } catch (error) {
+    setText("updatedAt",error.message || "เกิดข้อผิดพลาด ลองอีกครั้ง");
+  } finally {
+    $("searchBtn").disabled = false;
+  }
+});
+
+$("radarBtn").addEventListener("click", async () => {
+  if (!radarFrames.length) await loadRadar();
+  else showRadar();
+});
+
+$("plainBtn").addEventListener("click", () => {
+  if (radarLayer && map) map.removeLayer(radarLayer);
+  setText("radarStatus","แสดงแผนที่ปกติ โดยปิดชั้นเรดาร์แล้ว");
 });
 
 initMap();
-searchPlace().catch(err=>{
- $("status").textContent=err.message;
+searchPlace("สร้างคอม, อุดรธานี").catch(error => {
+  setText("updatedAt",error.message || "โหลดข้อมูลไม่สำเร็จ");
 });
 </script>
 </body>
